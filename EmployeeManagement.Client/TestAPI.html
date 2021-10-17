@@ -1,0 +1,195 @@
+﻿<html>
+<head>
+    <title>Employee Manager</title>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+
+    <script>
+
+
+    $(document).ready(function () {
+      getEmployeeList();
+    });
+
+    var Employee = {
+      employeeId: 0,
+      firstName: "",
+      lastName: "",
+      email: ""
+    }
+
+    // Get all Employees to display
+    function getEmployeeList() {
+      // Call Web API to get a list of Employees
+      $.ajax({
+          url: 'http://localhost:2258/api/employees',
+        type: 'GET',
+        dataType: 'json',
+        success: function (employees) {
+          employeeListSuccess(employees);
+        },
+        error: function (request, message, error) {
+          handleException(request, message, error);
+        }
+      });
+    }
+
+    // Display all Employees returned from Web API call
+    function employeeListSuccess(employees) {
+      // Iterate over the collection of data
+      $("#employeeTable tbody").remove();
+      $.each(employees, function (index, employee) {
+        // Add a row to the employee table
+        employeeAddRow(employee);
+      });
+    }
+
+    // Add employee row to <table>
+    function employeeAddRow(employee) {
+      // First check if a <tbody> tag exists, add one if not
+      if ($("#employeeTable tbody").length == 0) {
+        $("#employeeTable").append("<tbody></tbody>");
+      }
+
+      // Append row to <table>
+      $("#employeeTable tbody").append(
+        employeeBuildTableRow(employee));
+    }
+
+    // Build a <tr> for a row of table data
+    function employeeBuildTableRow(employee) {
+      var newRow = "<tr>" +
+        "<td>" + employee.employeeId + "</td>" +
+        "<td><input   class='input-firstName' type='text' value='" + employee.firstName + "'/></td>" +
+        "<td><input  class='input-lastName'  type='text' value='" + employee.lastName + "'/></td>" +
+        "<td><input  class='input-email' type='text' value='" + employee.email + "'/></td>" +
+        "<td>" +
+        "<button type='button' " +
+        "onclick='employeeUpdate(this);' " +
+        "class='btn btn-default' " +
+        "data-employeeId='" + employee.employeeId + "' " +
+        "data-firstName='" + employee.firstName + "' " +
+        "data-lastName='" + employee.lastName + "' " +
+        "data-email='" + employee.email + "' " +
+        ">" +
+        "<span class='glyphicon glyphicon-edit' /> Update" +
+        "</button> " +
+        " <button type='button' " +
+        "onclick='employeeDelete(this);'" +
+        "class='btn btn-default' " +
+        "data-employeeId='" + employee.employeeId + "'>" +
+        "<span class='glyphicon glyphicon-remove' />Delete" +
+        "</button>" +
+        "</td>" +
+        "</tr>";
+
+      return newRow;
+    }
+
+    function onAddEmployee(item) {
+      var options = {};
+      options.url = "http://localhost:2258/api/employees";
+      options.type = "POST";
+      var obj = Employee;
+      obj.firstName = $("#firstName").val();
+      obj.lastName = $("#lastName").val();
+      obj.email = $("#email").val();
+      console.dir(obj);
+      options.data = JSON.stringify(obj);
+      options.contentType = "application/json";
+      options.dataType = "html";
+
+      options.success = function (msg) {
+        getEmployeeList();
+        $("#msg").html(msg);
+      },
+        options.error = function () {
+          $("#msg").html("Error while calling the Web API!");
+        };
+      $.ajax(options);
+    }
+
+    function employeeUpdate(item) {
+      var employeeId = $(item).data("employeeid");
+      var options = {};
+        options.url = "http://localhost:2258/api/employees/" + employeeId;
+      options.type = "PUT";
+
+      var obj = Employee;
+      obj.employeeId = employeeId;
+
+      obj.firstName = $(".input-firstName", $(item).parent().parent()).val();
+      obj.lastName = $(".input-lastName", $(item).parent().parent()).val();
+      obj.email = $(".input-email", $(item).parent().parent()).val();
+      console.dir(obj);
+      options.data = JSON.stringify(obj);
+      options.contentType = "application/json";
+      options.dataType = "html";
+      options.success = function (msg) {
+        $("#msg").html(msg);
+      };
+      options.error = function () {
+        $("#msg").html("Error while calling the Web API!");
+      };
+      $.ajax(options);
+    }
+
+    function employeeDelete(item) {
+      var employeeId = $(item).data("employeeid");
+      var options = {};
+      options.url = "http://localhost:2258/api/employees/" + employeeId;
+      options.type = "DELETE";
+      options.dataType = "html";
+      options.success = function (msg) {
+        console.log('msg= ' + msg);
+        $("#msg").html(msg);
+        getEmployeeList();
+      };
+      options.error = function () {
+        $("#msg").html("Error while calling the Web API!");
+      };
+      $.ajax(options);
+    }
+
+    // Handle exceptions from AJAX calls
+    function handleException(request, message, error) {
+      var msg = "";
+      msg += "Code: " + request.status + "\n";
+      msg += "Text: " + request.statusText + "\n";
+      if (request.responseJSON != null) {
+        msg += "Message" + request.responseJSON.Message + "\n";
+      }
+
+      alert(msg);
+    }
+    </script>
+</head>
+<body>
+    <h3>Employee Manager</h3>
+    <form>
+        <table id="employeeTable" style="border: 1px solid #999" cellpadding="1">
+            <thead>
+                <tr>
+                    <td>Employee Id </td>
+                    <td> First Name </td>
+                    <td> Last Name </td>
+                    <td> Email </td>
+                    <td> </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td><input id="firstName" type="text" /></td>
+                    <td><input id="lastName" type="text" /></td>
+                    <td><input id="email" type="text" /></td>
+                    <td><input type="button" id="insert" value="Insert" onclick='onAddEmployee(this)' /></td>
+            </thead>
+        
+        </table>
+        <br />
+        <div id="msg"></div>
+    </form>
+   
+</body>
+</html> 
